@@ -21,3 +21,30 @@ All the OS settings and boilerplate app settins will be provided by Ansible from
 
 ### Provisioning
 - Ansible (Configuration Management)
+
+## Step-By-Step
+
+### 1. SSH Key Generation
+Generate a dedicated SSH key pair on your host machine to connect to the homelab VMs without mixing them with your main credentials:
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_homelab -C "homelab-key"
+```
+
+### 2. Configure Variables and Inventory
+Define your virtual machine IPs in [ansible/inventory.ini](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/ansible/inventory.ini). The connection details and final service users are configured cleanly in the [ansible/group_vars/](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/ansible/group_vars/) directory.
+
+### 3. Bootstrap Service Users
+Run the bootstrap playbook to create the service users, set up passwordless `sudo` escalation, and deploy the authorized SSH keys.
+
+This step runs using your initial/temporary VM credentials (using `-k` and `-K` to prompt for SSH and sudo passwords):
+```bash
+cd ansible
+ansible-playbook bootstrap.yml -k -K
+```
+
+### 4. Run Provisioning Playbook
+Once the bootstrap is complete, you can provision the VMs (update package lists, upgrade system packages, and install Docker) using the service accounts silently, without passwords:
+```bash
+ansible-playbook playbooks/site.yml
+```
+
