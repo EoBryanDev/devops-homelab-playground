@@ -59,5 +59,35 @@ https://<MANAGER_IP>/dashboard/
 ```
 *(For example: `https://192.168.122.138/dashboard/`. Don't forget the trailing slash `/`!)*
 
+## Deploying the Applications Stack
+
+This repository contains two custom applications located in the [apps/](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/apps) directory:
+* **Frontend:** A Vanilla JS frontend UI served via Nginx.
+* **Backend:** A Node.js Express REST API storing persistent data in an SQLite database.
+
+### 1. Build and Publish Images to DockerHub
+Build and push the Docker images to your public DockerHub registry (replace `eobryandev` with your actual username if different):
+```bash
+# Build & Push Frontend
+docker build -t eobryandev/homelab-frontend:latest ./apps/frontend
+docker push eobryandev/homelab-frontend:latest
+
+# Build & Push Backend
+docker build -t eobryandev/homelab-backend:latest ./apps/backend
+docker push eobryandev/homelab-backend:latest
+```
+
+### 2. Deploy the Stack on the Swarm
+Run the Ansible playbook with the `apps` tag to copy the stack file and trigger the Swarm deployment:
+```bash
+ansible-playbook playbooks/site.yml --tags "apps"
+```
+
+Once the stack is successfully deployed:
+* **Frontend UI (Secure HTTPS):** Access `https://<MANAGER_IP>/` to see the dashboard, serving container IDs, and to add/delete users.
+* **Backend API:** Direct API calls can be made to `https://<MANAGER_IP>/api/users`.
+* **Database Persistence:** The SQLite database is securely saved on a named Swarm volume (`sqlite-data`) on the worker node.
+
+
 
 

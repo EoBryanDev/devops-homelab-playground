@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homelab Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --primary: #818cf8;
+      --primary-hover: #4f46e5;
+      --accent: #f43f5e;
+      --accent-hover: #e11d48;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #a5b4fc, #f43f5e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .welcome-msg {
+      font-size: 1.2rem;
+      color: var(--text-sub);
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .info-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-sub);
+    }
+
+    .info-val {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary);
+      word-break: break-all;
+    }
+
+    .form-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      background: var(--primary);
+      color: #0f172a;
+      font-weight: 600;
+      font-family: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+      color: white;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .user-list {
+      list-style: none;
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .user-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .user-name {
+      font-weight: 500;
+    }
+
+    .delete-btn {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      background: var(--accent);
+      color: white;
+    }
+
+    .delete-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-sub);
+      font-style: italic;
+      padding: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Welcome to Homelab!</h1>
+      <p class="welcome-msg">Vanilla JS Frontend + Node.js Backend served by Traefik</p>
+    </header>
+
+    <!-- Host Info Section -->
+    <div class="card">
+      <h2 style="margin-bottom: 1rem; font-size: 1.5rem;">Cluster Runtime Info</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Frontend Container ID</span>
+          <span class="info-val" id="fe-container">Loading...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Backend Container ID</span>
+          <span class="info-val" id="be-container">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Management Section -->
+    <div class="card">
+      <h2 style="font-size: 1.5rem;">User Management (SQLite Database)</h2>
+      <div class="form-group">
+        <input type="text" id="username" placeholder="Type user name..." autocomplete="off">
+        <button onclick="addUser()">Add User</button>
+      </div>
+
+      <ul class="user-list" id="users-ul">
+        <li class="empty-state">Loading users...</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Fetch and display Frontend runtime information
+    async function loadInfo() {
+      try {
+        const res = await fetch('/');
+        const containerId = res.headers.get('X-Container-ID');
+        document.getElementById('fe-container').textContent = containerId || 'nginx-frontend';
+      } catch (err) {
+        document.getElementById('fe-container').textContent = 'Failed to load';
+      }
+
+      try {
+        const res = await fetch('/api/users/info');
+        const data = await res.json();
+        document.getElementById('be-container').textContent = data.container_id;
+      } catch (err) {
+        document.getElementById('be-container').textContent = 'Failed to load';
+      }
+    }
+
+    // Fetch and render users list from Backend API
+    async function loadUsers() {
+      const ul = document.getElementById('users-ul');
+      try {
+        const res = await fetch('/api/users');
+        const users = await res.json();
+        
+        ul.innerHTML = '';
+        if (users.length === 0) {
+          ul.innerHTML = '<li class="empty-state">No users registered yet.</li>';
+          return;
+        }
+
+        users.forEach(user => {
+          const li = document.createElement('li');
+          li.className = 'user-item';
+          li.innerHTML = `
+            <span class="user-name">${user.name}</span>
+            <button class="delete-btn" onclick="deleteUser('${user.slug}')">Delete</button>
+          `;
+          ul.appendChild(li);
+        });
+      } catch (err) {
+        ul.innerHTML = '<li class="empty-state" style="color: var(--accent);">Failed to load users from backend.</li>';
+      }
+    }
+
+    // Create user via POST /api/users
+    async function addUser() {
+      const input = document.getElementById('username');
+      const name = input.value.trim();
+      if (!name) return;
+
+      try {
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        if (res.ok) {
+          input.value = '';
+          await loadUsers();
+        }
+      } catch (err) {
+        console.error('Error adding user:', err);
+      }
+    }
+
+    // Delete user via DELETE /api/users/:slug
+    async function deleteUser(slug) {
+      try {
+        const res = await fetch(`/api/users/${slug}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          await loadUsers();
+        }
+      } catch (err) {
+        console.error('Error deleting user:', err);
+      }
+    }
+
+    // Initialize Page
+    loadInfo();
+    loadUsers();
+  </script>
+</body>
+</html>

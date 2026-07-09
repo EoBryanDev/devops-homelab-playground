@@ -7,10 +7,13 @@
     - role: docker
     - role: swarm
     - role: traefik
+    - role: apps
   tags:
     - common
     - docker
     - swarm
     - traefik
+    - apps
+
 
 
