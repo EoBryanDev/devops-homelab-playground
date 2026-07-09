@@ -2,16 +2,24 @@ services:
   traefik:
     image: traefik:v3.1
     command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.swarmMode=true"
-      - "--providers.docker.exposedbydefault=false"
+      # Swarm Mode Provider for Traefik v3
+      - "--providers.swarm=true"
+      - "--providers.swarm.exposedByDefault=false"
+      
+      # Entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      
+      # Global HTTP to HTTPS redirect
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      
+      # API & Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
@@ -20,9 +28,17 @@ services:
       placement:
         constraints:
           - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        # Route dashboard directly via HTTPS with self-signed TLS
+        - "traefik.http.routers.dashboard.rule=PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+        - "traefik.http.routers.dashboard.entrypoints=websecure"
+        - "traefik.http.routers.dashboard.tls=true"
+        - "traefik.http.routers.dashboard.service=api@internal"
       restart_policy:
         condition: on-failure
 
 networks:
   public-overlay:
     external: true
+
