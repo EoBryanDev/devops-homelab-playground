@@ -1,0 +1,28 @@
+---
+- name: Configure Traefik on Manager Node
+  block:
+    - name: Create applications webserver directory
+      ansible.builtin.file:
+        path: "{{ ansible_facts['user_dir'] }}/applications/webserver"
+        state: directory
+        mode: '0755'
+
+    - name: Check if public-overlay network exists
+      ansible.builtin.command: docker network inspect public-overlay
+      register: network_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create public-overlay network
+      ansible.builtin.command: docker network create -d overlay --attachable public-overlay
+      when: network_check.rc != 0
+
+    - name: Copy docker-compose.yml template for Traefik
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ ansible_facts['user_dir'] }}/applications/webserver/docker-compose.yml"
+        mode: '0644'
+
+    - name: Deploy Traefik Stack
+      ansible.builtin.command: docker stack deploy -c "{{ ansible_facts['user_dir'] }}/applications/webserver/docker-compose.yml" webserver
+  when: inventory_hostname in groups['managers']

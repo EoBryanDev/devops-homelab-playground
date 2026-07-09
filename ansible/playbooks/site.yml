@@ -5,7 +5,12 @@
   roles:
     - role: common
     - role: docker
+    - role: swarm
+    - role: traefik
   tags:
     - common
     - docker
+    - swarm
+    - traefik
+
 
