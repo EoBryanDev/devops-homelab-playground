@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:latest
     command:
       # Swarm Mode Provider for Traefik v3
       - "--providers.swarm=true"
@@ -20,6 +20,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - DOCKER_API_VERSION=1.40
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
@@ -35,6 +37,8 @@ services:
         - "traefik.http.routers.dashboard.entrypoints=websecure"
         - "traefik.http.routers.dashboard.tls=true"
         - "traefik.http.routers.dashboard.service=api@internal"
+        # Define port for auto-discovered service (avoids 'port is missing' error)
+        - "traefik.http.services.webserver-traefik.loadbalancer.server.port=8080"
       restart_policy:
         condition: on-failure
 
