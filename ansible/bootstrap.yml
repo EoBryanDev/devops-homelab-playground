@@ -1,0 +1,84 @@
+---
+- name: Bootstrap Ansible Service User on Managers
+  hosts: managers
+  gather_facts: false
+  vars:
+    # Temporarily connect with the existing user to create the service user
+    ansible_user: bryan-ubuntu-manager
+    service_user: ansible-ubuntu-manager
+    # Disable public key auth to prevent too many authentication failures when using passwords
+    ansible_ssh_common_args: "-o PubkeyAuthentication=no"
+  tasks:
+    - name: Ensure the service user group exists
+      ansible.builtin.group:
+        name: "{{ service_user }}"
+        state: present
+      become: true
+
+    - name: Create the ansible service user
+      ansible.builtin.user:
+        name: "{{ service_user }}"
+        shell: /bin/bash
+        groups: sudo
+        append: true
+        state: present
+      become: true
+
+    - name: Configure passwordless sudo for service user
+      ansible.builtin.lineinfile:
+        path: "/etc/sudoers.d/{{ service_user }}"
+        line: "{{ service_user }} ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
+        state: present
+        create: true
+        mode: "0440"
+      become: true
+
+    - name: Add local public key to authorized_keys
+      ansible.posix.authorized_key:
+        user: "{{ service_user }}"
+        state: present
+        key: "{{ lookup('file', '~/id_ed25519_homelab.pub') if lookup('file', '~/id_ed25519_homelab.pub', errors='ignore') else lookup('file', '~/.ssh/id_ed25519_homelab.pub') }}"
+      become: true
+
+- name: Bootstrap Ansible Service User on Workers
+  hosts: workers
+  gather_facts: false
+  vars:
+    # Temporarily connect with the existing user to create the service user
+    ansible_user: bryan-ubuntu-worker1
+    service_user: ansible-ubuntu-worker
+    # Use the newly created service user and SSH key to tunnel to the worker, and disable public key auth on the target worker
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -i ~/.ssh/id_ed25519_homelab -W %h:%p ansible-ubuntu-manager@192.168.122.138' -o PubkeyAuthentication=no"
+  tasks:
+    - name: Ensure the service user group exists
+      ansible.builtin.group:
+        name: "{{ service_user }}"
+        state: present
+      become: true
+
+    - name: Create the ansible service user
+      ansible.builtin.user:
+        name: "{{ service_user }}"
+        shell: /bin/bash
+        groups: sudo
+        append: true
+        state: present
+      become: true
+
+    - name: Configure passwordless sudo for service user
+      ansible.builtin.lineinfile:
+        path: "/etc/sudoers.d/{{ service_user }}"
+        line: "{{ service_user }} ALL=(ALL) NOPASSWD:ALL"
+        validate: "visudo -cf %s"
+        state: present
+        create: true
+        mode: "0440"
+      become: true
+
+    - name: Add local public key to authorized_keys
+      ansible.posix.authorized_key:
+        user: "{{ service_user }}"
+        state: present
+        key: "{{ lookup('file', '~/id_ed25519_homelab.pub') if lookup('file', '~/id_ed25519_homelab.pub', errors='ignore') else lookup('file', '~/.ssh/id_ed25519_homelab.pub') }}"
+      become: true
