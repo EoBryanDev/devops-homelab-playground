@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   api:
-    image: eobryandev/homelab-backend:9bc29f4
+    image: eobryandev/homelab-backend:ee4f228
     networks:
       - public-overlay
     volumes:

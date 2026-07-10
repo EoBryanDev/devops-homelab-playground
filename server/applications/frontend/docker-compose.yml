@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: eobryandev/homelab-frontend:9bc29f4
+    image: eobryandev/homelab-frontend:ee4f228
     networks:
       - public-overlay
     deploy:
