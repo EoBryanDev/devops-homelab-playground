@@ -1,4 +1,5 @@
 stream_over_http_enabled: true
+
 server:
   http_listen_port: 3200
 
@@ -6,20 +7,18 @@ distributor:
   receivers:
     otlp:
       protocols:
-        http:
         grpc:
-
-ingester:
-  max_block_duration: 5m
-
-compactor:
-  compaction:
-    block_size_bytes: 524288000 # 500MB
-    keep_blocks_bytes: 10737418240 # 10GB
-    retention: 24h
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
 
 storage:
   trace:
     backend: local
+    wal:
+      path: /tmp/tempo/wal
     local:
       path: /tmp/tempo/blocks
+
+usage_report:
+  reporting_enabled: false
