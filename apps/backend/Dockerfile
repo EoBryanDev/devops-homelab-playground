@@ -1,6 +1,5 @@
-FROM node:20-slim
+FROM node:20-slim AS builder
 
-# Install build tools for native sqlite3 package compilation
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -13,9 +12,14 @@ COPY package.json ./
 
 RUN npm install --only=production
 
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY --from=builder /app/node_modules ./node_modules
+
 COPY . .
 
-# Create the data directory for the SQLite database volume mount
 RUN mkdir -p /data
 
 EXPOSE 80 9464

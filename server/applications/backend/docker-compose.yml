@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  backend:
+  api:
     image: eobryandev/homelab-backend:9bc29f4
     networks:
       - public-overlay
@@ -14,14 +14,14 @@ services:
           - node.role == worker
       labels:
         - "traefik.enable=true"
-        # Route /backend/api requests to the backend api (uses /backend prefix to avoid conflict with Traefik dashboard API at /api)
-        - "traefik.http.routers.backend.rule=PathPrefix(`/backend`)"
-        - "traefik.http.routers.backend.entrypoints=websecure"
-        - "traefik.http.routers.backend.tls=true"
-        - "traefik.http.routers.backend.service=backend-backend"
-        - "traefik.http.routers.backend.middlewares=backend-strip"
-        - "traefik.http.middlewares.backend-strip.stripprefix.prefixes=/backend"
-        - "traefik.http.services.backend-backend.loadbalancer.server.port=80"
+        # Route /backend/api requests to the backend api
+        - "traefik.http.routers.api.rule=PathPrefix(`/backend`)"
+        - "traefik.http.routers.api.entrypoints=websecure"
+        - "traefik.http.routers.api.tls=true"
+        - "traefik.http.routers.api.service=api"
+        - "traefik.http.routers.api.middlewares=api-strip"
+        - "traefik.http.middlewares.api-strip.stripprefix.prefixes=/backend"
+        - "traefik.http.services.api.loadbalancer.server.port=80"
       restart_policy:
         condition: on-failure
 

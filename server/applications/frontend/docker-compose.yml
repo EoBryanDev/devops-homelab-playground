@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  frontend:
+  web:
     image: eobryandev/homelab-frontend:9bc29f4
     networks:
       - public-overlay
@@ -13,12 +13,12 @@ services:
       labels:
         - "traefik.enable=true"
         # Route /frontend requests to the frontend (StripPrefix so nginx receives requests at / internally)
-        - "traefik.http.routers.frontend.rule=PathPrefix(`/frontend`)"
-        - "traefik.http.routers.frontend.entrypoints=websecure"
-        - "traefik.http.routers.frontend.tls=true"
-        - "traefik.http.routers.frontend.middlewares=frontend-strip"
-        - "traefik.http.middlewares.frontend-strip.stripprefix.prefixes=/frontend"
-        - "traefik.http.services.frontend-frontend.loadbalancer.server.port=80"
+        - "traefik.http.routers.web.rule=PathPrefix(`/frontend`)"
+        - "traefik.http.routers.web.entrypoints=websecure"
+        - "traefik.http.routers.web.tls=true"
+        - "traefik.http.routers.web.middlewares=web-strip"
+        - "traefik.http.middlewares.web-strip.stripprefix.prefixes=/frontend"
+        - "traefik.http.services.web.loadbalancer.server.port=80"
       restart_policy:
         condition: on-failure
 
