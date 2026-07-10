@@ -7,6 +7,26 @@
         state: directory
         mode: '0755'
 
+    - name: Create certs directory
+      ansible.builtin.file:
+        path: "{{ ansible_facts['user_dir'] }}/applications/webserver/certs"
+        state: directory
+        mode: '0755'
+
+    - name: Check if self-signed cert already exists
+      ansible.builtin.stat:
+        path: "{{ ansible_facts['user_dir'] }}/applications/webserver/certs/cert.pem"
+      register: cert_check
+
+    - name: Generate self-signed certificate for Traefik TLS
+      ansible.builtin.command: >
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048
+        -keyout {{ ansible_facts['user_dir'] }}/applications/webserver/certs/key.pem
+        -out {{ ansible_facts['user_dir'] }}/applications/webserver/certs/cert.pem
+        -subj "/CN=homelab.local/O=Homelab"
+        -addext "subjectAltName=DNS:homelab.local,DNS:traefik,DNS:localhost,IP:192.168.122.138,IP:127.0.0.1"
+      when: not cert_check.stat.exists
+
     - name: Check if public-overlay network exists
       ansible.builtin.command: docker network inspect public-overlay
       register: network_check
@@ -21,6 +41,12 @@
       ansible.builtin.template:
         src: docker-compose.yml.j2
         dest: "{{ ansible_facts['user_dir'] }}/applications/webserver/docker-compose.yml"
+        mode: '0644'
+
+    - name: Copy dynamic config for dashboard
+      ansible.builtin.template:
+        src: dynamic.yml.j2
+        dest: "{{ ansible_facts['user_dir'] }}/applications/webserver/dynamic.yml"
         mode: '0644'
 
     - name: Deploy Traefik Stack

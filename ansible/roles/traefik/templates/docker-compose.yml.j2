@@ -5,23 +5,31 @@ services:
       # Swarm Mode Provider for Traefik v3
       - "--providers.swarm=true"
       - "--providers.swarm.exposedByDefault=false"
-      
+
       # Entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      
+
       # Global HTTP to HTTPS redirect
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      
-      # API & Dashboard
+
+      # API & Dashboard (insecure=true exposes dashboard on port 8080 directly)
       - "--api.dashboard=true"
-      - "--api.insecure=false"
-      # Trust self-signed certs on backends (e.g. Portainer on 9443)
-      - "--serversTransport.insecureSkipVerify=true"
+      - "--api.insecure=true"
+
+      # Enable TLS on websecure entrypoint with built-in self-signed certificate (homelab)
+      - "--entrypoints.websecure.http.tls=true"
+
+      # Enable ping endpoint for health checks
+      - "--ping=true"
+
+      # File provider for dynamic config (dashboard via HTTPS, since api@internal cannot be referenced by Swarm labels)
+      - "--providers.file.directory=/etc/traefik/dynamic/"
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     environment:
       - DOCKER_API_VERSION=1.40
     volumes:
@@ -34,19 +42,16 @@ services:
           - node.role == manager
       labels:
         - "traefik.enable=true"
-        # Route dashboard via /traefik prefix to avoid colliding with backend /api routes
-        - "traefik.http.routers.dashboard.rule=PathPrefix(`/traefik/dashboard`) || PathPrefix(`/traefik/api`)"
-        - "traefik.http.routers.dashboard.entrypoints=websecure"
-        - "traefik.http.routers.dashboard.tls=true"
-        - "traefik.http.routers.dashboard.service=api@internal"
-        - "traefik.http.routers.dashboard.middlewares=traefik-strip"
-        - "traefik.http.middlewares.traefik-strip.stripprefix.prefixes=/traefik"
-        # Define port for auto-discovered service (avoids 'port is missing' error)
-        - "traefik.http.services.webserver-traefik.loadbalancer.server.port=8080"
+      configs:
+        - source: dashboard-config
+          target: /etc/traefik/dynamic/dashboard.yml
       restart_policy:
         condition: on-failure
+
+configs:
+  dashboard-config:
+    file: ./dynamic.yml
 
 networks:
   public-overlay:
     external: true
-

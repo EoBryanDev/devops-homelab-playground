@@ -1,0 +1,23 @@
+http:
+  routers:
+    dashboard-ui:
+      rule: "PathPrefix(`/dashboard`)"
+      entrypoints:
+        - "websecure"
+      service: "api@internal"
+      tls: true
+      middlewares:
+        - "dashboard-strip"
+      priority: 1000
+    dashboard-api:
+      rule: "PathPrefix(`/api`)"
+      entrypoints:
+        - "websecure"
+      service: "api@internal"
+      tls: true
+      priority: 1000
+  middlewares:
+    dashboard-strip:
+      stripPrefix:
+        prefixes:
+          - "/dashboard"
