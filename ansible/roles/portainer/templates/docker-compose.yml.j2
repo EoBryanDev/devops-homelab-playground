@@ -32,14 +32,14 @@ services:
           - node.role == manager
       labels:
         - "traefik.enable=true"
+        - "traefik.docker.network=public-overlay"
         # Access Portainer UI via Traefik on /portainer subpath (StripPrefix middleware ensures Portainer receives root requests)
         - "traefik.http.routers.portainer.rule=PathPrefix(`/portainer`)"
         - "traefik.http.routers.portainer.entrypoints=websecure"
         - "traefik.http.routers.portainer.tls=true"
         - "traefik.http.middlewares.portainer-strip.stripprefix.prefixes=/portainer"
         - "traefik.http.routers.portainer.middlewares=portainer-strip"
-        - "traefik.http.services.portainer.loadbalancer.server.port=9443"
-        - "traefik.http.services.portainer.loadbalancer.server.scheme=https"
+        - "traefik.http.services.portainer.loadbalancer.server.port=9000"
       restart_policy:
         condition: on-failure
 
