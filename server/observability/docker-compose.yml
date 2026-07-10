@@ -1,10 +1,11 @@
-version: '3.8'
-
 services:
   prometheus:
     image: prom/prometheus:latest
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-config:/etc/prometheus
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
     networks:
       - public-overlay
     deploy:
@@ -16,8 +17,9 @@ services:
 
   loki:
     image: grafana/loki:3.0.0
-    volumes:
-      - ./loki-config.yml:/etc/loki/local-config.yaml
+    configs:
+      - source: loki_config
+        target: /etc/loki/local-config.yaml
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - public-overlay
@@ -30,8 +32,9 @@ services:
 
   tempo:
     image: grafana/tempo:latest
-    volumes:
-      - ./tempo-config.yml:/etc/tempo/tempo.yaml
+    configs:
+      - source: tempo_config
+        target: /etc/tempo/tempo.yaml
     command: -config.file=/etc/tempo/tempo.yaml
     networks:
       - public-overlay
@@ -50,7 +53,14 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
-      - ./grafana-provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    configs:
+      - source: grafana_datasources
+        target: /etc/grafana/provisioning/datasources/datasources.yaml
+      - source: grafana_dashboard_provider
+        target: /etc/grafana/provisioning/dashboards/dashboards.yaml
+      - source: grafana_dashboard_homelab
+        target: /etc/grafana/provisioning/dashboards/homelab-dashboard.json
     networks:
       - public-overlay
     deploy:
@@ -59,13 +69,31 @@ services:
           - node.role == manager
       labels:
         - "traefik.enable=true"
-        # Expose Grafana on the /grafana subpath
         - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
         - "traefik.http.routers.grafana.entrypoints=websecure"
         - "traefik.http.routers.grafana.tls=true"
+        - "traefik.http.routers.grafana.service=grafana"
         - "traefik.http.services.grafana.loadbalancer.server.port=3000"
       restart_policy:
         condition: on-failure
+
+configs:
+  prometheus_config:
+    file: ./prometheus.yml
+  loki_config:
+    file: ./loki-config.yml
+  tempo_config:
+    file: ./tempo-config.yml
+  grafana_datasources:
+    file: ./grafana-provisioning/datasources/datasources.yaml
+  grafana_dashboard_provider:
+    file: ./grafana-provisioning/dashboards/dashboards.yaml
+  grafana_dashboard_homelab:
+    file: ./grafana-provisioning/dashboards/homelab-dashboard.json
+
+volumes:
+  prometheus-config:
+  grafana-data:
 
 networks:
   public-overlay:
