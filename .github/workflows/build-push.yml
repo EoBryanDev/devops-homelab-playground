@@ -1,0 +1,71 @@
+name: GitOps Build and Push Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'server/applications/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Get Git Short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/frontend
+          push: true
+          tags: |
+            eobryandev/homelab-frontend:${{ steps.vars.outputs.sha_short }}
+            eobryandev/homelab-frontend:latest
+
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/backend
+          push: true
+          tags: |
+            eobryandev/homelab-backend:${{ steps.vars.outputs.sha_short }}
+            eobryandev/homelab-backend:latest
+
+      - name: Update Compose files with new Commit SHA Tag
+        run: |
+          sed -i "s|image: eobryandev/homelab-frontend:.*|image: eobryandev/homelab-frontend:${{ steps.vars.outputs.sha_short }}|g" server/applications/frontend/docker-compose.yml
+          sed -i "s|image: eobryandev/homelab-backend:.*|image: eobryandev/homelab-backend:${{ steps.vars.outputs.sha_short }}|g" server/applications/backend/docker-compose.yml
+
+      - name: Commit and Push Updated Compose Files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add server/applications/
+          # Ensure we only commit if there are actual tag changes
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "chore(gitops): update image tags to ${{ steps.vars.outputs.sha_short }} [skip ci]"
+            git push
+          else
+            echo "No changes in compose tags. Skipping commit."
+          fi
