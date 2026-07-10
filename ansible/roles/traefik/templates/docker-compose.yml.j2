@@ -17,6 +17,8 @@ services:
       # API & Dashboard
       - "--api.dashboard=true"
       - "--api.insecure=false"
+      # Trust self-signed certs on backends (e.g. Portainer on 9443)
+      - "--serversTransport.insecureSkipVerify=true"
     ports:
       - "80:80"
       - "443:443"
