@@ -2,97 +2,116 @@
 
 ## Description
 
-This repo aims to provide a self-hosted enviroment provided by Virt-Manager. It'll includes a cluster docker swarm where the master node has access to world and will receive all the external traffic via Traefik as a Reverse Proxy.
+This repo aims to provide a self-hosted environment provided by Virt-Manager. It includes a Docker Swarm cluster where the Manager node has access to the world and receives all external traffic via Traefik as a Reverse Proxy.
 
-My applications will be deployed on worker nodes. This nodes only will be able to be accessed by master node and from inside the node to network will be open.
+Our application stack runs on the private Worker node (`.130`), which is isolated from external access and can only receive traffic routed through Traefik on the Manager (`.138`) via a secure overlay network.
 
-All the OS settings and boilerplate app settins will be provided by Ansible from the host machine via SSH.
+---
 
 ## Tech Stack
 
 ### Infrastructure (Virt-Manager)
-- Ubuntu 24.04 Server (1x Manager Node)
-- Ubuntu 24.04 Server (1x Worker Node)
+- **Manager Node:** Ubuntu 24.04 Server (`192.168.122.138`)
+- **Worker Node:** Ubuntu 24.04 Server (`192.168.122.130`)
 
-### Core Software
-- Docker (Containerization)
-- Docker Swarm (Container Orchestration)
-- Traefik (Reverse Proxy)
+### Core & Orchestration
+- **Docker & Docker Swarm** (Containerization & Clustering)
+- **Traefik v3** (Reverse Proxy & HTTPS Redirection)
+- **Portainer CE** (GitOps engine and cluster dashboard)
+
+### Observability Stack
+- **Prometheus** (Metrics scraper)
+- **Grafana** (Dashboards UI)
+- **Loki** (Log aggregator)
+- **Tempo** (Distributed tracing timeline)
+- **OpenTelemetry** (Auto-instrumented Node.js backend)
 
 ### Provisioning
-- Ansible (Configuration Management)
+- **Ansible** (Configuration Management)
 
-## Step-By-Step
+---
 
-### 1. SSH Key Generation
-Generate a dedicated SSH key pair on your host machine to connect to the homelab VMs without mixing them with your main credentials:
+## Playbook Structure & Tags
+
+The main playbook [ansible/playbooks/site.yml](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/ansible/playbooks/site.yml) is structured semantically into separate play blocks. You can run individual components using tags:
+
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_homelab -C "homelab-key"
-```
-
-### 2. Configure Variables and Inventory
-Define your virtual machine IPs in [ansible/inventory.ini](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/ansible/inventory.ini). The connection details and final service users are configured cleanly in the [ansible/group_vars/](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/ansible/group_vars/) directory.
-
-### 3. Bootstrap Service Users
-Run the bootstrap playbook to create the service users, set up passwordless `sudo` escalation, and deploy the authorized SSH keys.
-
-This step runs using your initial/temporary VM credentials (using `-k` and `-K` to prompt for SSH and sudo passwords):
-```bash
-cd ansible
-ansible-playbook bootstrap.yml -k -K
-```
-
-### 4. Run Provisioning Playbook
-Once the bootstrap is complete, you can provision the VMs (update package lists, upgrade system packages, and install Docker) using the service accounts silently, without passwords:
-```bash
+# Run the entire provisioning pipeline
 ansible-playbook playbooks/site.yml
+
+# Or run specific layers using tags:
+ansible-playbook playbooks/site.yml --tags "common"      # Initial upgrades
+ansible-playbook playbooks/site.yml --tags "docker"      # Docker installation
+ansible-playbook playbooks/site.yml --tags "swarm"       # Clustering managers & workers
+ansible-playbook playbooks/site.yml --tags "traefik"     # Traefik stack deployment
+ansible-playbook playbooks/site.yml --tags "portainer"   # Portainer stack deployment
 ```
 
-## Accessing the Traefik Dashboard
-The Traefik dashboard is exposed securely over HTTPS (port `443`) on the Manager node and is routed via Traefik itself. 
+---
 
-There is a global redirection in place, so typing an `http://` URL will automatically redirect you to `https://`. Since it uses a self-signed certificate, your browser will show a security warning—you can safely bypass it to access the dashboard.
+## Portainer - GitOps Engine
 
-Visit:
-```text
-https://<MANAGER_IP>/dashboard/
-```
-*(For example: `https://192.168.122.138/dashboard/`. Don't forget the trailing slash `/`!)*
+Portainer CE is automatically deployed on the Manager node to act as our GitOps engine.
 
-## Deploying the Applications Stack
+### Accessing Portainer
+* **URL (Direct HTTPS):** `https://192.168.122.138:9443`
+* **URL (Direct HTTP):** `http://192.168.122.138:9000`
+* **Username:** `admin`
+* **Password:** `admin123456789`
 
-This repository contains two custom applications located in the [apps/](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/apps) directory:
-* **Frontend:** A Vanilla JS frontend UI served via Nginx.
-* **Backend:** A Node.js Express REST API storing persistent data in an SQLite database.
+### Creating Stacks via GitOps
+To deploy and automatically track your applications:
+1. In Portainer, go to **Stacks** -> **Add Stack**.
+2. Select **Repository** as the build method.
+3. Git Repository URL: `https://github.com/EoBryanDev/devops-homelab-playground.git`
+4. Compose path: `server/applications/frontend/docker-compose.yml` (for Frontend) or `server/applications/backend/docker-compose.yml` (for Backend).
+5. Enable **Automatic updates** (Git polling) to make Portainer pull and update the services automatically on changes.
 
-### 1. Build and Publish Images to DockerHub
-Build and push the Docker images to your public DockerHub registry (replace `eobryandev` with your actual username if different):
+> [!IMPORTANT]
+> **GitOps Polling Tip (Unique Tags vs Latest):** 
+> If your compose file targets `image: ...:latest`, the file content in Git never changes when you update the image. Therefore, Portainer's Git polling will see no changes and **will not trigger a rollout**. 
+> Always use **unique tags** (like version `v1.0.1` or the git commit SHA) in your compose files, commit and push to Git. Portainer will detect the modified tag and deploy the updated container.
+
+---
+
+## Observability Stack
+
+The monitoring tools are located in the [server/observability/](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/server/observability) directory and run strictly on the Manager node.
+
+### Deploying the Observability Stack
+Deploy it directly on the Manager node:
 ```bash
-# Build & Push Frontend
+docker stack deploy -c server/observability/docker-compose.yml monitoring
+```
+
+### Accessing Grafana
+* **URL (Secure HTTPS):** `https://192.168.122.138/grafana/`
+* **Authentication:** Anonymous login is pre-enabled. You will enter directly as **Admin**.
+* **Querying Telemetry:** 
+  * Open the **Explore** tab.
+  * Select **Prometheus** to view metrics (e.g. searching for `http_requests_total`).
+  * Select **Loki** to view aggregated container logs.
+  * Select **Tempo** to inspect end-to-end tracing timelines showing Express request flows and SQLite query timings instrumented via **OpenTelemetry**.
+
+---
+
+## Applications Stack
+
+The applications reside in the [apps/](file:///home/bryan-galaxy-zos/Programming/devops-homelab-playground/apps) folder and execute on the Worker node:
+
+### 1. Build and Publish Images (on your host machine)
+Build and push the images containing your code changes to DockerHub:
+```bash
+# Build & Push Frontend (Nginx static serving container ID in headers)
 docker build -t eobryandev/homelab-frontend:latest ./apps/frontend
 docker push eobryandev/homelab-frontend:latest
 
-# Build & Push Backend
+# Build & Push Backend (Node.js with OpenTelemetry auto-instrumentation)
 docker build -t eobryandev/homelab-backend:latest ./apps/backend
 docker push eobryandev/homelab-backend:latest
 ```
 
-### 2. Deploy the Applications Stack (GitOps Flow)
-Since your Manager VM has access to this Git repository, you can deploy the applications directly from the repository directory on the Manager VM:
-```bash
-# Deploy Frontend Stack
-docker stack deploy -c server/applications/frontend/docker-compose.yml frontend
-
-# Deploy Backend Stack
-docker stack deploy -c server/applications/backend/docker-compose.yml backend
-```
-
-Once the stacks are successfully deployed:
-* **Frontend UI (Secure HTTPS):** Access `https://<MANAGER_IP>/` to see the dashboard and manage users.
-* **Backend API:** Direct API calls can be made to `https://<MANAGER_IP>/api/users`.
-* **Database Persistence:** The SQLite database is securely saved on a named Swarm volume (`sqlite-data`) on the worker node.
-
-
-
-
-
+### 2. Live URLs
+Once running, Traefik routes them securely:
+* **Frontend UI:** `https://192.168.122.138/`
+* **Backend API:** `https://192.168.122.138/api/users`
