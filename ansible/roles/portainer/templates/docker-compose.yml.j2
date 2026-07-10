@@ -38,9 +38,7 @@ services:
         - "traefik.http.routers.portainer.tls=true"
         - "traefik.http.middlewares.portainer-strip.stripprefix.prefixes=/portainer"
         - "traefik.http.routers.portainer.middlewares=portainer-strip"
-        - "traefik.http.services.portainer.loadbalancer.server.port=9443"
-        - "traefik.http.services.portainer.loadbalancer.server.scheme=https"
-        - "traefik.http.services.portainer.loadbalancer.serverstransport=insecure@internal"
+        - "traefik.http.services.portainer.loadbalancer.server.port=9000"
       restart_policy:
         condition: on-failure
 
