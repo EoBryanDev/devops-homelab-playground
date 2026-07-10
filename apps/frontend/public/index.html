@@ -231,7 +231,7 @@
     // Fetch and display Frontend runtime information
     async function loadInfo() {
       try {
-        const res = await fetch('/');
+        const res = await fetch('/frontend/');
         const containerId = res.headers.get('X-Container-ID');
         document.getElementById('fe-container').textContent = containerId || 'nginx-frontend';
       } catch (err) {
