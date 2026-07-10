@@ -1,0 +1,18 @@
+---
+- name: Deploy Portainer Stack on Manager Node
+  block:
+    - name: Ensure Portainer configuration directory exists
+      ansible.builtin.file:
+        path: "{{ ansible_facts['user_dir'] }}/applications/portainer"
+        state: directory
+        mode: '0755'
+
+    - name: Copy Portainer compose template
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ ansible_facts['user_dir'] }}/applications/portainer/docker-compose.yml"
+        mode: '0644'
+
+    - name: Deploy Portainer Stack
+      ansible.builtin.command: docker stack deploy -c "{{ ansible_facts['user_dir'] }}/applications/portainer/docker-compose.yml" portainer
+  when: inventory_hostname in groups['managers']

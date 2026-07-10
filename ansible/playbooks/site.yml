@@ -1,18 +1,32 @@
 ---
-- name: Initial Setup
+- name: Configuração Inicial e Segurança
   hosts: all
-  gather_facts: true
+  become: true
   roles:
-    - role: common
-    - role: docker
-    - role: swarm
-    - role: traefik
-  tags:
     - common
+  tags: common
+
+- name: Instalação do Docker Engine
+  hosts: all
+  become: true
+  roles:
     - docker
+  tags: docker
+
+- name: Inicialização e Vinculação do Docker Swarm
+  hosts: all
+  roles:
     - swarm
+  tags: swarm
+
+- name: Deploy do Webserver e Traefik
+  hosts: managers
+  roles:
     - traefik
+  tags: traefik
 
-
-
-
+- name: Deploy do Portainer (GitOps Engine)
+  hosts: managers
+  roles:
+    - portainer
+  tags: portainer

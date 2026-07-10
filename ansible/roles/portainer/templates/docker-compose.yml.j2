@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  agent:
+    image: portainer/agent:2.21.5
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - public-overlay
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+  portainer:
+    image: portainer/portainer-ce:2.21.5
+    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+    volumes:
+      - portainer_data:/data
+    networks:
+      - public-overlay
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        # Access Portainer UI via Traefik on /portainer subpath (StripPrefix middleware ensures Portainer receives root requests)
+        - "traefik.http.routers.portainer.rule=PathPrefix(`/portainer`)"
+        - "traefik.http.routers.portainer.entrypoints=websecure"
+        - "traefik.http.routers.portainer.tls=true"
+        - "traefik.http.middlewares.portainer-strip.stripprefix.prefixes=/portainer"
+        - "traefik.http.routers.portainer.middlewares=portainer-strip"
+        - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  portainer_data:
+
+networks:
+  public-overlay:
+    external: true
