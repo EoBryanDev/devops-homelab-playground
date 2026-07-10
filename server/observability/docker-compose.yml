@@ -45,6 +45,41 @@ services:
       restart_policy:
         condition: on-failure
 
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers
+    configs:
+      - source: promtail_config
+        target: /etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - public-overlay
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+    networks:
+      - public-overlay
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+
   grafana:
     image: grafana/grafana:latest
     environment:
@@ -84,6 +119,8 @@ configs:
     file: ./loki-config.yml
   tempo_config:
     file: ./tempo-config.yml
+  promtail_config:
+    file: ./promtail-config.yml
   grafana_datasources:
     file: ./grafana-provisioning/datasources/datasources.yaml
   grafana_dashboard_provider:
