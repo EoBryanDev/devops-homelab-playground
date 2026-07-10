@@ -239,7 +239,7 @@
       }
 
       try {
-        const res = await fetch('/api/users/info');
+        const res = await fetch('/backend/api/users/info');
         const data = await res.json();
         document.getElementById('be-container').textContent = data.container_id;
       } catch (err) {
@@ -251,7 +251,7 @@
     async function loadUsers() {
       const ul = document.getElementById('users-ul');
       try {
-        const res = await fetch('/api/users');
+        const res = await fetch('/backend/api/users');
         const users = await res.json();
         
         ul.innerHTML = '';
@@ -281,7 +281,7 @@
       if (!name) return;
 
       try {
-        const res = await fetch('/api/users', {
+        const res = await fetch('/backend/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name })
@@ -298,7 +298,7 @@
     // Delete user via DELETE /api/users/:slug
     async function deleteUser(slug) {
       try {
-        const res = await fetch(`/api/users/${slug}`, {
+        const res = await fetch(`/backend/api/users/${slug}`, {
           method: 'DELETE'
         });
         if (res.ok) {
