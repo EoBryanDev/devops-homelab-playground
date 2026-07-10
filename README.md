@@ -77,16 +77,21 @@ docker build -t eobryandev/homelab-backend:latest ./apps/backend
 docker push eobryandev/homelab-backend:latest
 ```
 
-### 2. Deploy the Stack on the Swarm
-Run the Ansible playbook with the `apps` tag to copy the stack file and trigger the Swarm deployment:
+### 2. Deploy the Applications Stack (GitOps Flow)
+Since your Manager VM has access to this Git repository, you can deploy the applications directly from the repository directory on the Manager VM:
 ```bash
-ansible-playbook playbooks/site.yml --tags "apps"
+# Deploy Frontend Stack
+docker stack deploy -c server/applications/frontend/docker-compose.yml frontend
+
+# Deploy Backend Stack
+docker stack deploy -c server/applications/backend/docker-compose.yml backend
 ```
 
-Once the stack is successfully deployed:
-* **Frontend UI (Secure HTTPS):** Access `https://<MANAGER_IP>/` to see the dashboard, serving container IDs, and to add/delete users.
+Once the stacks are successfully deployed:
+* **Frontend UI (Secure HTTPS):** Access `https://<MANAGER_IP>/` to see the dashboard and manage users.
 * **Backend API:** Direct API calls can be made to `https://<MANAGER_IP>/api/users`.
 * **Database Persistence:** The SQLite database is securely saved on a named Swarm volume (`sqlite-data`) on the worker node.
+
 
 
 
