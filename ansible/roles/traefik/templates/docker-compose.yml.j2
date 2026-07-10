@@ -32,11 +32,13 @@ services:
           - node.role == manager
       labels:
         - "traefik.enable=true"
-        # Route dashboard directly via HTTPS with self-signed TLS
-        - "traefik.http.routers.dashboard.rule=PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
+        # Route dashboard via /traefik prefix to avoid colliding with backend /api routes
+        - "traefik.http.routers.dashboard.rule=PathPrefix(`/traefik/dashboard`) || PathPrefix(`/traefik/api`)"
         - "traefik.http.routers.dashboard.entrypoints=websecure"
         - "traefik.http.routers.dashboard.tls=true"
         - "traefik.http.routers.dashboard.service=api@internal"
+        - "traefik.http.routers.dashboard.middlewares=traefik-strip"
+        - "traefik.http.middlewares.traefik-strip.stripprefix.prefixes=/traefik"
         # Define port for auto-discovered service (avoids 'port is missing' error)
         - "traefik.http.services.webserver-traefik.loadbalancer.server.port=8080"
       restart_policy:
