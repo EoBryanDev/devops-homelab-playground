@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    image: eobryandev/homelab-frontend:latest
+    image: eobryandev/homelab-frontend:f23d188
     networks:
       - public-overlay
     deploy:
