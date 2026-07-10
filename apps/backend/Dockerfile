@@ -18,6 +18,6 @@ COPY . .
 # Create the data directory for the SQLite database volume mount
 RUN mkdir -p /data
 
-EXPOSE 80
+EXPOSE 80 9464
 
 CMD ["npm", "start"]
